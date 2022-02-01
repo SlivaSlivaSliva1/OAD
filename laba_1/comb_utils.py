@@ -9,8 +9,8 @@
 def factorial(n):
     """
     Функция нахождения факториала
-    :param n: аргумент факториала
-    :return: int
+     :param n: аргумент факториала
+     :return: int
     """
     result = 1
 
@@ -22,31 +22,94 @@ def factorial(n):
 
 
 # -------------------------------- ПЕРЕСТАНОВКИ --------------------------------
-def placement_with_repeat(el_set, repeated_el, repeat_count):
-    first_placement = []
-    for curr in el_set:
-        # вставляем в базовую комбинацию элемент
-        first_placement.append(
-            curr
+def _get_repeat_settings_and_el_set(el_count, repeated_el_dict):
+    new_el_set = []
+
+    for i in range(0, el_count):
+        repeated_count = repeated_el_dict.get(i)
+        if not repeated_count:
+            repeated_count = 1
+            # обновляем словарь повторений,
+            # элемент встречается один раз
+            repeated_el_dict.update({
+                i: repeated_count,
+            })
+
+        # добавляем элемент в множество
+        # repeated_count раз
+        new_el_set.extend(
+            [i] * repeated_count
         )
 
-        # если текущий в цикле элемент - повторяющийся
-        # то вставим его еще (repeat_count - 1) раз
-        if curr == repeated_el:
-            counter = 1
+    # возвращаем множество с повторениями
+    # и словарь с информацией о повторениях
+    # каждого элемента множества
+    return new_el_set, repeated_el_dict
 
-            while counter < repeat_count:
-                first_placement.append(
-                    curr
-                )
-                counter += 1
 
-    return placement_without_repeat(
-        el_set=first_placement,
+def get_permutations(
+    el_count,
+    with_repeat=False,
+    only_len_of_results=True,
+    repeated_el_dict=None,
+):
+    """
+    Функция получения размещений или их числа по заданным параметрам
+     :param el_count: Количество используемых элементов во множестве
+     :param with_repeat: Флаг необходимости повторений
+     :param only_len_of_results: Флаг необходимости нахождения только
+      количества размещений, если False - вернет все размещения
+     :param repeated_el_dict: Словарь, ключом которого является повторяющийся
+      элемент, а значение по ключу - количество повторений
+     :return: Tuple
+    """
+    if not with_repeat:
+        if not only_len_of_results:
+            result = _permutations_without_repeat(
+                el_set=range(0, el_count),
+            )
+        else:
+            result = factorial(
+                n=el_count,
+            )
+    else:
+        el_set, repeated_el_dict = _get_repeat_settings_and_el_set(
+            el_count=el_count,
+            repeated_el_dict=repeated_el_dict,
+        )
+
+        if not only_len_of_results:
+            result = _permutations_with_repeat(
+                el_set=el_set,
+            )
+        else:
+            # вычисляем факториал n из формулы
+            fac_n = factorial(len(el_set))
+            # вычисляем знаменатель из формулы
+            # (применяем к каждому количеству
+            # повторений функцию факториала и
+            # суммируем результаты)
+            znam = sum(map(
+                factorial,
+                repeated_el_dict.values(),
+            ))
+
+            # получаем результат
+            result = fac_n // znam
+
+    return result
+
+
+def _permutations_with_repeat(el_set):
+    # используем генерацию перестановок без
+    # повторений, но передаем множество с повторениями
+    # Парадоксально, но это приводит к правильному ответу
+    return _permutations_without_repeat(
+        el_set=el_set,
     )
 
 
-def placement_without_repeat(el_set):
+def _permutations_without_repeat(el_set):
     """
     Перестановка без повторений.
     Использует алгоритм Нарайаны для генерации.
@@ -101,22 +164,59 @@ def placement_without_repeat(el_set):
 
 
 # -------------------------------- РАЗМЕЩЕНИЯ --------------------------------
-def get_all_placement_with_repeat(el_count, pos_count):
+def get_placements(
+    el_count,
+    pos_count,
+    with_repeat=False,
+    only_len_of_results=True,
+):
+    """
+    Функция получения размещений или их числа по заданным параметрам
+     :param el_count: Количество используемых элементов во множестве
+     :param pos_count: Количество позиций в размещении
+     :param with_repeat: Флаг необходимости повторений
+     :param only_len_of_results: Флаг необходимости нахождения только
+      количества размещений, если False - вернет все размещения
+     :return: Tuple
+    """
+    if not with_repeat:
+        if not only_len_of_results:
+            result = _placements_without_repeat(
+                el_count=el_count,
+                pos_count=pos_count,
+            )
+        else:
+            fac_n = factorial(el_count)
+            znam = factorial(el_count - pos_count)
+
+            result = fac_n // znam
+    else:
+        if not only_len_of_results:
+            result = _placements_with_repeat(
+                el_count=el_count,
+                pos_count=pos_count,
+            )
+        else:
+            # колво_элементов в степени колва_позиций
+            result = el_count**pos_count
+
+    return result
+
+
+def _placements_with_repeat(el_count, pos_count):
     """
     Размещение с повторениями.
     Генерирует размещение по аналогии с вычислением
     всех возможных чисел в системе счисления по
     основанию el_count с количеством разрядов в числе
     pos_count.
-    Формула для вычисления кол-ва элементов:
-    A = el_count**pos_count
-    :param el_count: Количество используемых элементов
-    (основание системы счисления)
-    :param pos_count: Количество позиций в размещении
-    (количество разрядов в числе)
-    :return: list[tuple]
+     :param el_count: Количество используемых элементов
+      во множестве (основание системы счисления)
+     :param pos_count: Количество позиций в размещении
+      (количество разрядов в числе)
+     :return: list[tuple]
     """
-    # список счетчиков (разрядов), равны 0 в начале,
+    # список счетчиков (разрядов), равны 0 в начале
     # самое первое размещение
     counters = [0] * pos_count
     # для экономии памяти будем собирать список кортежей
@@ -149,25 +249,65 @@ def get_all_placement_with_repeat(el_count, pos_count):
     return combinations
 
 
-def get_all_placement_without_repeat(el_count, pos_count):
+def _placements_without_repeat(el_count, pos_count):
     """
-    TODO: A теперь, после всего пережитого, надо все задокументировать
-     !!!(ЗАКОММЕНТИТЬ)!!!
+    TODO: Неэффективный алгоритм много памяти и процессора кушац
     """
-    all_placement = placement_without_repeat(range(0, el_count))
+    all_placement = _placements_with_repeat(el_count, pos_count)
     results = []
 
     for x in all_placement:
-        results.append(
-            x[:pos_count]
-        )
+        if len(set(x)) == pos_count:
+            results.append(x)
 
     return results
 # -------------------------------- РАЗМЕЩЕНИЯ --------------------------------
 
 
 # -------------------------------- СОЧЕТАНИЯ --------------------------------
-def get_combinations_with_repeat(el_count, pos_count):
+def get_combinations(
+    el_count,
+    pos_count,
+    with_repeat=False,
+    only_len_of_results=True,
+):
+    """
+    Функция получения комбинаций или их числа по заданным параметрам
+     :param el_count: Количество используемых элементов во множестве
+     :param pos_count: Количество позиций в сочетании
+     :param with_repeat: Флаг необходимости повторений
+     :param only_len_of_results: Флаг необходимости нахождения только
+      количества сочетаний, если False - вернет все сочетания
+     :return:
+    """
+    if not with_repeat:
+        if not only_len_of_results:
+            result = _combinations_without_repeat(
+                el_count=el_count,
+                pos_count=pos_count,
+            )
+        else:
+            fac_n = factorial(el_count)
+            znam = factorial(pos_count) * factorial(el_count - pos_count)
+
+            result = fac_n // znam
+    else:
+        if not only_len_of_results:
+            result = _combinations_with_repeat(
+                el_count=el_count,
+                pos_count=pos_count,
+            )
+        else:
+            el_count = el_count + pos_count - 1
+            fac_n = factorial(el_count)
+            znam = factorial(pos_count) * factorial(el_count - pos_count)
+
+            result = fac_n // znam
+
+    return result
+
+
+def _combinations_with_repeat(el_count, pos_count):
     """
     TODO: A теперь, после всего пережитого, надо все задокументировать
      !!!(ЗАКОММЕНТИТЬ)!!!
@@ -197,7 +337,7 @@ def get_combinations_with_repeat(el_count, pos_count):
     return combinations
 
 
-def get_combinations_without_repeat(el_count, pos_count):
+def _combinations_without_repeat(el_count, pos_count):
     """
     TODO: A теперь, после всего пережитого, надо все задокументировать
      !!!(ЗАКОММЕНТИТЬ)!!!
