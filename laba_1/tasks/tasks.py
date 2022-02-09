@@ -1,7 +1,7 @@
 """
 Решаем задания 1 - 15
 """
-from comb_utils import (
+from laba_1.comb_utils import (
     get_placements,
     get_permutations,
     get_combinations,
